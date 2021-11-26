@@ -1,5 +1,7 @@
 FROM elixir:1.12-alpine
 
+WORKDIR /usr/src/lanyard
+
 ENV MIX_ENV=prod
 
 COPY .git .git
