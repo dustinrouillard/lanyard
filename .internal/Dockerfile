@@ -15,6 +15,8 @@ RUN apk add openssl git openssh
 
 RUN git config --global url."git@github.com:".insteadOf https://github.com/
 RUN git config --global url."git://".insteadOf https://
+
+RUN mkdir ~/.ssh
 RUN ssh-keyscan -H github.com >> ~/.ssh/known_hosts
 
 RUN mix local.rebar --force \
