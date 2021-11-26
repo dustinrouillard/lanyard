@@ -1,4 +1,4 @@
-name: Docker Image CI
+name: Public Docker Image
 
 on:
   push:

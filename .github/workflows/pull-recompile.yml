@@ -1,15 +1,17 @@
-name: build-deploy
+name: Pull & Recompile
 
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - "README.md"
+      - "LICENSE"
 
 jobs:
   pull-recompile:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@master
-      - name: Run git pull within docker container
+      - name: Pull and recompile with IEx
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -18,12 +20,4 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           script: |
             docker exec lanyard /bin/sh -c 'git pull'
-      - name: Run docker exec command on remote server
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          port: ${{ secrets.SSH_PORT }}
-          key: ${{ secrets.SSH_KEY }}
-          username: ${{ secrets.SSH_USER }}
-          script: |
             docker exec lanyard /bin/sh -c 'iex --name recompile@0.0.0.0 --cookie lanyard --remsh lanyard --rpc-eval lanyard "IEx.Helpers.recompile()" -e ":erlang.halt"'
