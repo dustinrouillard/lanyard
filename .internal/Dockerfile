@@ -21,6 +21,7 @@ RUN ssh-keyscan -H github.com >> ~/.ssh/known_hosts
 
 RUN mix local.rebar --force \
     && mix local.hex --force \
-    && mix deps.get
+    && mix deps.get \
+    && mix compile
 
 ENTRYPOINT [ "sh", "-c", "elixir --name lanyard@0.0.0.0 --cookie lanyard --no-halt -S mix" ]
