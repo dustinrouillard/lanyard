@@ -15,4 +15,4 @@ RUN mix local.rebar --force \
     && mix local.hex --force \
     && mix deps.get
 
-ENTRYPOINT [ "sh", "-c", "elixir --name lanyard@127.0.0.1 --cookie lanyard --no-halt -S mix" ]
+ENTRYPOINT [ "sh", "-c", "elixir --name lanyard@0.0.0.0 --cookie lanyard --no-halt -S mix" ]
