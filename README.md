@@ -10,6 +10,29 @@ You can use Lanyard's API without deploying anything yourself - but if you want 
 
 Just [join this Discord server](https://discord.gg/UrXF2cfJ7F) and your presence will start showing up when you `GET api.lanyard.rest/v1/users/:your_id`. It's that easy.
 
+## Table of Contents
+
+- [Community Projects](#community-projects)
+- [API Docs](#api-docs)
+  - [Getting a user's presence data](#getting-a-user-s-presence-data)
+  * [KV](#kv)
+    - [Use cases](#use-cases)
+    - [Limits](#limits)
+    - [Getting an API Key](#getting-an-api-key)
+    - [Setting a key->value pair](#setting-a-key--value-pair)
+    - [Deleting a key](#deleting-a-key)
+- [Socket Docs](#socket-docs)
+  - [Subscribing to multiple user presences](#subscribing-to-multiple-user-presences)
+  - [Subscribing to a single user presence](#subscribing-to-a-single-user-presence)
+  - [Subscribing to every user presence](#subscribing-to-every-user-presence)
+  * [List of Opcodes](#list-of-opcodes)
+  * [Events](#events)
+  * [Error Codes](#error-codes)
+- [Quicklinks](#quicklinks)
+- [Self-host with Docker](#self-host-with-docker)
+- [Used By](#used-by)
+- [Todo](#todo)
+
 ## Community Projects
 
 The Lanyard community has worked on some pretty cool projects that allows you to extend the functionality of Lanyard. PR to add a project!
@@ -24,10 +47,12 @@ The Lanyard community has worked on some pretty cool projects that allows you to
 [js-lanyard](https://github.com/xaronnn/js-lanyard/) - Use Lanyard in your Web App. \
 [go-lanyard](https://github.com/barbarbar338/go-lanyard) - Lanyard API wrapper for GoLang - supports REST & WebSocket \
 [use-lanyard](https://github.com/LeonardSSH/use-lanyard) - Lanyard with Composition API for Vue. Supports REST and WebSocket methods \
-[hiven-status](https://github.com/cancodes/hiven-status) - Transfer your Discord status in real time to Hiven using the Lanyard API. \
 [use-listen-along](https://github.com/punctuations/use-listen-along) - Mock the discord 'Listen Along' feature within a react hook powered by the Lanyard API. \
 [lanyard-graphql](https://github.com/DevSnowflake/lanyard-graphql) - A GraphQL port of the Lanyard API. \
-[svelte-lanyard](https://github.com/iGalaxyYT/svelte-lanyard) - A Lanyard API wrapper for Svelte. Supports REST & WebSocket.
+[svelte-lanyard](https://github.com/iGalaxyYT/svelte-lanyard) - A Lanyard API wrapper for Svelte. Supports REST & WebSocket. \
+[denyard](https://github.com/xHyroM/denyard) - Lanyard API wrapper for Deno - Supports REST & WebSocket. \
+[lanyard-ui](https://lanyard.sakurajima.cloud/) - Lanyard visualizer focused on the KV aspect \
+[discord-status-actions](https://github.com/CompeyDev/discord-status-action) - Updates a file to include your discord status using the Lanyard API.
 
 ## API Docs
 
@@ -146,8 +171,19 @@ When making Lanyard KV API requests, set an `Authorization` header with the API 
 
 ##### HTTP
 
-`PUT https://api.lanyard.rest/v1/users/:user_id/:key`  
+`PUT https://api.lanyard.rest/v1/users/:user_id/kv/:key`  
 The value will be set to the body of the request. The body can be any type of data, but it will be string-encoded when set in Lanyard KV.
+
+#### Setting multiple key->value pairs
+
+##### Discord
+
+Not yet implemented
+
+##### HTTP
+
+`PATCH https://api.lanyard.rest/v1/users/:user_id/kv`  
+The user's KV store will be merged with the body of the request. Conflicting keys will be overwritten. The body must be keyvalue pair object with a maximum depth of 1.
 
 #### Deleting a key
 
@@ -157,7 +193,7 @@ The value will be set to the body of the request. The body can be any type of da
 
 ##### HTTP
 
-`DELETE https://api.lanyard.rest/v1/users/:user_id/:key`
+`DELETE https://api.lanyard.rest/v1/users/:user_id/kv/:key`
 
 ## Socket Docs
 
@@ -243,9 +279,20 @@ Lanyard can disconnect clients for multiple reasons, usually to do with messages
 
 #### Types of Errors
 
-| Name                   | Code | Data             |
-| ---------------------- | ---- | ---------------- |
-| Invalid/Unknown Opcode | 4004 | `unknown_opcode` |
+| Name                   | Code | Data                   |
+| ---------------------- | ---- | ---------------------- |
+| Invalid/Unknown Opcode | 4004 | `unknown_opcode`       |
+| Opcode Requires Data   | 4005 | `requires_data_object` |
+| Invalid Payload        | 4006 | `invalid_payload`      |
+
+## Quicklinks
+
+Lanyard quicklinks allow you to easily access resources from Discord, such as profile pictures.
+
+### User Icons
+
+`https://api.lanyard.rest/<id>.<file_type>`
+Where `id` is the Discord user ID. `file_type` can be one of: `png`, `gif`, `webp`, `jpg`, or `jpeg`
 
 ## Self-host with Docker
 
@@ -285,18 +332,21 @@ If you'd like to run Lanyard with `docker-compose`, here's an example:
 version: "3.8"
 
 services:
+  redis:
+    image: redis
+    restart: always
+    container_name: lanyard_redis
   lanyard:
     image: phineas/lanyard:latest
     restart: always
     container_name: lanyard
+    depends_on:
+      - redis
     ports:
       - 4001:4001
     environment:
       BOT_TOKEN: <token>
       REDIS_HOST: redis
-  redis:
-    image: redis
-    container_name: lanyard_redis
 ```
 
 Note, that you're **hosting a http server, not https**. You'll need to use a **reverse proxy** such as [traefik](https://traefik.io/traefik/) if you want to secure your API endpoint.
@@ -332,19 +382,51 @@ Below is a list of sites using Lanyard right now, check them out! A lot of them 
 - [nith.codes](https://nith.codes)
 - [veny.xyz](https://veny.xyz)
 - [5elenay.github.io](https://5elenay.github.io)
-- [nickdev.org](https://nickdev.org)
+- [notnick.io](https://notnick.io)
 - [encrypteddev.com](https://encrypteddev.com)
 - [kevinthomas.codes](https://kevinthomas.codes)
 - [amine.im](https://amine.im)
 - [loom4k.me](https://loom4k.me)
 - [presence.im](https://presence.im/)
-- [maisakurajima.netlify.app](https://maisakurajima.netlify.app/)
 - [eleven.codes](https://eleven.codes)
-- [mehmetali345.xyz](https://mehmetali345.xyz)
-- [jackbailey.uk](https://jackbailey.uk)
+- [jackbailey.dev](https://jackbailey.dev)
+- [345dev.me](https://345dev.me)
 - [d3r1n.com](https://d3r1n.com/)
-- [anaxes.xyz](https://anaxes.xyz)
+- [vops.cc](https://vops.cc)
+- [lion.himbo.cat](https://lion.himbo.cat)
+- [zeromomentum.me](https://zeromomentum.me)
+- [emirkabal.com](https://emirkabal.com)
+- [wosleyv.dev](https://www.wosleyv.dev)
+- [aidan.pw](https://aidan.pw)
+- [anaxes.codes](https://www.anaxes.codes)
+- [avyanshralph.xyz](https://avyanshralph.xyz)
 - [maki.cafe](https://maki.cafe)
+- [cenap.js.org](https://cenap.js.org)
+- [rexulec.com](https://rexulec.com)
+- [isaackogan.com](https://www.isaackogan.com)
+- [eleven011.xyz](https://eleven011.xyz)
+- [krypton.ninja](https://krypton.ninja)
+- [oxmc.xyz](https://oxmc.xyz)
+- [voltages.me](https://voltages.me)
+- [tysm.dev](https://tysm.dev)
+- [ggorg.tk](https://ggorg.tk)
+- [hexiaq.cf](https://hexiaq.cf)
+- [itsdestiny.me](https://itsdestiny.me)
+- [darkshiny.me](http://darkshiny.me)
+- [nawrasse.vercel.app](https://nawrasse.vercel.app)
+- [noirs.me](https://noirs.me)
+- [2m4u.netlify.app](https://2m4u.netlify.app/)
+- [eleven.js.org](https://eleven.js.org)
+- [roxza.me](https://roxza.me)
+- [keaton.codes](https://keaton.codes)
+- [itsmebravo.dev](https://itsmebravo.dev)
+- [cimok.co.uk](https://cimok.co.uk/)
+- [winnerose.live](https://winnerose.live/)
+- [alysum.vercel.app](https://alysum.vercel.app/)
+- [alpha.is-a.dev](https://alpha.is-a.dev)
+- [rovi.me](https://rovi.me)
+- [snazzah.com](https://snazzah.com)
+- [aidak.tk](https://aidak.tk)
 
 ## Todo
 

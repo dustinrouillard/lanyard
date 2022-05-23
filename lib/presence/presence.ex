@@ -12,7 +12,8 @@ defmodule Lanyard.Presence do
             discord_user: nil,
             discord_presence: nil,
             kv: nil,
-            subscriber_pids: nil
+            subscriber_pids: nil,
+            refmap: nil
 
   def start_link(state) do
     GenServer.start_link(__MODULE__, state, name: :"presence:#{state.user_id}")
@@ -40,7 +41,8 @@ defmodule Lanyard.Presence do
        discord_presence: state.discord_presence,
        discord_user: state.discord_user,
        kv: kv,
-       subscriber_pids: subscriber_pids
+       subscriber_pids: subscriber_pids,
+       refmap: %{}
      }}
   end
 
@@ -49,8 +51,29 @@ defmodule Lanyard.Presence do
   end
 
   def handle_info({:add_subscriber, pid}, state) do
-    Process.monitor(pid)
-    {:noreply, %{state | subscriber_pids: [pid | state.subscriber_pids]}}
+    ref = Process.monitor(pid)
+
+    {:noreply,
+     %{
+       state
+       | subscriber_pids: [pid | state.subscriber_pids],
+         refmap: Map.put(state.refmap, pid, ref)
+     }}
+  end
+
+  def handle_info({:remove_subscriber, pid}, state) do
+    ref = Map.get(state.refmap, pid)
+
+    unless ref == nil do
+      Process.demonitor(ref)
+    end
+
+    {:noreply,
+     %{
+       state
+       | refmap: Map.delete(state.refmap, pid),
+         subscriber_pids: List.delete(state.subscriber_pids, pid)
+     }}
   end
 
   def handle_cast({:sync, new_state}, state) do
@@ -71,6 +94,10 @@ defmodule Lanyard.Presence do
       state.subscriber_pids,
       {:remote_send, %{op: 0, t: "PRESENCE_UPDATE", d: pretty_presence}}
     )
+
+    Task.start(fn ->
+      Lanyard.Analytics.presence_tick(state.user_id, pretty_presence)
+    end)
 
     {:noreply, Map.merge(state, new_state)}
   end
@@ -193,8 +220,11 @@ defmodule Lanyard.Presence do
 
   def sync(user_id, payload) do
     with {:ok, pid} <-
-           GenRegistry.lookup(__MODULE__, Integer.to_string(user_id)) do
+           GenRegistry.lookup(__MODULE__, normalize_user_id(user_id)) do
       GenServer.cast(pid, {:sync, payload})
     end
   end
+
+  defp normalize_user_id(user_id) when is_integer(user_id), do: Integer.to_string(user_id)
+  defp normalize_user_id(user_id), do: user_id
 end
